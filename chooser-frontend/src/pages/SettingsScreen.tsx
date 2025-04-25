@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"
+
 
 export default function SettingsScreen() {
   const [playersCount, setPlayersCount] = useState(2);
@@ -6,6 +8,8 @@ export default function SettingsScreen() {
   const [gameType, setGameType] = useState<"simple" | "tasks">("simple");
   const [useAI, setUseAI] = useState(false);
   const [difficulty, setDifficulty] = useState("normal");
+
+  const navigate = useNavigate();
 
   const startGame = () => {
     console.log("START GAME:", {
@@ -15,7 +19,18 @@ export default function SettingsScreen() {
       useAI,
       difficulty,
     });
+  
+    navigate("/lobby", {
+      state: {
+        playersCount,
+        eliminationMode,
+        gameType,
+        useAI,
+        difficulty,
+      },
+    });
   };
+  
 
   return (
     <div className="max-w-md mx-auto space-y-6">

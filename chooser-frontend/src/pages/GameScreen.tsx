@@ -39,22 +39,31 @@ export default function GameScreen() {
   
     setSelectedId(chosen.id);
   
-    // Установка задания (отдельно!)
+    // Задание
     if (gameType === "tasks") {
       if (useAI) {
-        const fakeTask = `AI-задание (${difficulty})`;
-        setTask(fakeTask);
+        try {
+          const response = await fetch(`http://localhost:8000/task/ai?difficulty=${difficulty}`);
+          if (!response.ok) throw new Error("Ошибка AI");
+          const data = await response.json();
+          setTask(data.task);
+        } catch {
+          setTask("AI не смог придумать задание 🤖");
+        }
       } else {
-        const basicTasks = [
-          "Сделай 10 приседаний",
-          "Спой песню",
-          "Расскажи анекдот",
-        ];
-        const randomTask =
-          basicTasks[Math.floor(Math.random() * basicTasks.length)];
-        setTask(randomTask);
+        try {
+          const response = await fetch(`http://localhost:8000/task/random?difficulty=${difficulty}`);
+          if (!response.ok) {
+            throw new Error("Ошибка запроса");
+          }
+          const data = await response.json();
+          setTask(data.text);
+        } catch (error) {
+          setTask("Не удалось получить задание 😢");
+        }
       }
     }
+
   
     // Обновляем список игроков
     if (eliminationMode) {

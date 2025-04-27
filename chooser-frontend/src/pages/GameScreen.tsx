@@ -28,6 +28,7 @@ export default function GameScreen() {
   const [showTaskPopup, setShowTaskPopup] = useState(false);
   const [winnerId, setWinnerId] = useState<number | null>(null);
   const [showWinnerPopup, setShowWinnerPopup] = useState(false);
+  const [isTaskLoading, setIsTaskLoading] = useState(false);
 
   useEffect(() => {
     const PORTRAIT_BG_COLOR = "rgb(17, 24, 39)";
@@ -138,6 +139,22 @@ export default function GameScreen() {
     }
   };
 
+  const fetchTask = async () => {
+    setIsTaskLoading(true);
+    try {
+      const response = await fetch(
+        `http://192.168.1.50:8000/task/${useAI ? "ai" : "random"}?difficulty=${difficulty}`
+      );
+      if (!response.ok) throw new Error("Ошибка запроса");
+      const data = await response.json();
+      setTask(useAI ? data.task : data.text);
+    } catch {
+      setTask("Не удалось получить задание :(");
+    } finally {
+      setIsTaskLoading(false);
+    }
+  };
+
   const chooseRandomPlayer = async () => {
     if (isChoosing) return;
     setIsChoosing(true);
@@ -169,18 +186,8 @@ export default function GameScreen() {
     }
 
     if (gameType === "tasks") {
-      try {
-        const response = await fetch(
-          `http://192.168.1.50:8000/task/${useAI ? "ai" : "random"}?difficulty=${difficulty}`
-        );
-        if (!response.ok) throw new Error("Ошибка запроса");
-        const data = await response.json();
-        setTask(useAI ? data.task : data.text);
-        setShowTaskPopup(true);
-      } catch {
-        setTask("Не удалось получить задание :(");
-        setShowTaskPopup(true);
-      }
+      setShowTaskPopup(true);
+      fetchTask();
     } else if (eliminationMode) {
       setPlayers((prev) =>
         prev.map((p) => (p.id === chosen.id ? { ...p, active: false } : p))
@@ -283,35 +290,46 @@ export default function GameScreen() {
               <h3 className="text-2xl font-bold text-center mb-4 text-gray-800">
                 Задание для игрока {selectedId !== null ? selectedId + 1 : ""}
               </h3>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <p className="text-lg text-center italic text-gray-800">{task}</p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 min-h-24 flex items-center justify-center">
+                {isTaskLoading ? (
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <p className="text-gray-600">Загрузка задания...</p>
+                  </div>
+                ) : (
+                  <p className="text-lg text-center italic text-gray-800">{task}</p>
+                )}
               </div>
 
-              {eliminationMode ? (
-                <div className="space-y-3">
-                  <p className="text-gray-600 text-center font-medium">Игрок выполнил задание?</p>
-                  <div className="flex gap-4 justify-center">
+              {!isTaskLoading && (
+                <>
+                  {eliminationMode ? (
+                    <div className="space-y-3">
+                      <p className="text-gray-600 text-center font-medium">Игрок выполнил задание?</p>
+                      <div className="flex gap-4 justify-center">
+                        <button
+                          onClick={() => handleTaskCompletion(true)}
+                          className="bg-green-500 text-white px-6 py-2 rounded-lg flex-1 hover:bg-green-600 transition-colors"
+                        >
+                          Да
+                        </button>
+                        <button
+                          onClick={() => handleTaskCompletion(false)}
+                          className="bg-red-500 text-white px-6 py-2 rounded-lg flex-1 hover:bg-red-600 transition-colors"
+                        >
+                          Нет
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                     <button
-                      onClick={() => handleTaskCompletion(true)}
-                      className="bg-green-500 text-white px-6 py-2 rounded-lg flex-1 hover:bg-green-600 transition-colors"
+                      onClick={() => setShowTaskPopup(false)}
+                      className="bg-blue-500 text-white w-full py-3 rounded-lg hover:bg-blue-600 transition-colors"
                     >
-                      Да
+                      Далее
                     </button>
-                    <button
-                      onClick={() => handleTaskCompletion(false)}
-                      className="bg-red-500 text-white px-6 py-2 rounded-lg flex-1 hover:bg-red-600 transition-colors"
-                    >
-                      Нет
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowTaskPopup(false)}
-                  className="bg-blue-500 text-white w-full py-3 rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Далее
-                </button>
+                  )}
+                </>
               )}
             </div>
           </div>

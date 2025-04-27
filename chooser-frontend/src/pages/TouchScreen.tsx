@@ -135,12 +135,6 @@ export default function TouchScreen() {
       
 
       setActiveTouches(newActiveTouches);
-      
-      if ("vibrate" in navigator) {
-        console.log("Вибрация поддерживается");
-      } else {
-        console.log("Вибрация не поддерживается");
-      }
 
       //ne osobo rabotaet
       if (e.changedTouches.length > 0 && navigator.vibrate) {

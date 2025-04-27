@@ -108,8 +108,6 @@ export default function TouchScreen() {
 
   useEffect(() => {
     const handleDocumentTouchStart = (e: TouchEvent) => {
-      // Предотвращаем стандартное поведение для мультитача
-      e.preventDefault();
       
       // Получаем все активные касания
       const allTouches = Array.from(e.touches);

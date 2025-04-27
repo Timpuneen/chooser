@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_API_URL: string;
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
+
 export default function GameScreen() {
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -142,9 +152,8 @@ export default function GameScreen() {
   const fetchTask = async () => {
     setIsTaskLoading(true);
     try {
-      const response = await fetch(
-        `http://192.168.1.50:8000/task/${useAI ? "ai" : "random"}?difficulty=${difficulty}`
-      );
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/task/${useAI ? "ai" : "random"}?difficulty=${difficulty}`);
+
       if (!response.ok) throw new Error("Ошибка запроса");
       const data = await response.json();
       setTask(useAI ? data.task : data.text);

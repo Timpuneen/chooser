@@ -137,9 +137,9 @@ export default function TouchScreen() {
       setActiveTouches(newActiveTouches);
 
       //ne osobo rabotaet
-      if (e.changedTouches.length > 0 && navigator.vibrate) {
-        navigator.vibrate(30);
-      }
+      // if (e.changedTouches.length > 0 && navigator.vibrate) {
+      //   navigator.vibrate(30);
+      // }
     };
     
     const handleDocumentTouchEnd = (e: TouchEvent) => {

@@ -115,7 +115,7 @@ export default function GameScreen() {
         if (index === 0) {
           return {
             left: width * 0.5 - circleSize / 2,
-            top: height * 0.52 - spacing5 * 1.8 - circleSize / 2,
+            top: height * 0.25 - circleSize / 2
           };
         } else {
           const col5 = (index - 1) % 2;

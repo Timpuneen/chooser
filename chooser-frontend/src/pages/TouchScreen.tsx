@@ -225,7 +225,7 @@ export default function TouchScreen() {
           if (index === 0) {
             return {
               left: width * 0.5 - circleSize / 2,
-              top: height * 0.46 - spacing5 * 1.8 - circleSize / 2,
+              top: height * 0.18 - circleSize / 2
             };
           } else {
             const col5 = (index - 1) % 2;

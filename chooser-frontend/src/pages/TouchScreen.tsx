@@ -15,6 +15,11 @@ export default function TouchScreen() {
   const [isPortrait, setIsPortrait] = useState(
     window.matchMedia("(orientation: portrait)").matches
   );
+  const [isMobile, setIsMobile] = useState(false);
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
 
   // Количество активных касаний
   const activeCount = activeTouches.filter(Boolean).length;
@@ -23,66 +28,75 @@ export default function TouchScreen() {
     const PORTRAIT_BG_COLOR = "rgb(17, 24, 39)";
     const LANDSCAPE_BG_COLOR = "black";
 
+    const checkIfMobile = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobileCheck = /iphone|ipod|android|windows phone|mobile/i.test(userAgent);
+      setIsMobile(isMobileCheck);
+    };
+
     const handleOrientationChange = () => {
       const portrait = window.matchMedia("(orientation: portrait)").matches;
       setIsPortrait(portrait);
-      
-      // Устанавливаем высоту html для гарантии работы
-      document.documentElement.style.height = '100%';
-      
-      // Применяем стили с !important через setProperty
-      document.documentElement.style.setProperty(
-        'background-color', 
-        portrait ? PORTRAIT_BG_COLOR : LANDSCAPE_BG_COLOR,
-        'important'
-      );
-      
-      document.body.style.setProperty(
-        'background-color', 
-        portrait ? PORTRAIT_BG_COLOR : LANDSCAPE_BG_COLOR,
-        'important'
-      );
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+      if (isMobile) {
+        // Только на мобильных меняем стили
+        document.documentElement.style.height = '100%';
+
+        document.documentElement.style.setProperty(
+          'background-color',
+          portrait ? PORTRAIT_BG_COLOR : LANDSCAPE_BG_COLOR,
+          'important'
+        );
+
+        document.body.style.setProperty(
+          'background-color',
+          portrait ? PORTRAIT_BG_COLOR : LANDSCAPE_BG_COLOR,
+          'important'
+        );
+      }
     };
 
+    checkIfMobile();
     handleOrientationChange();
 
     const events = ['orientationchange', 'resize'];
     events.forEach(e => window.addEventListener(e, handleOrientationChange));
 
     return () => {
-      document.documentElement.style.height = '';
-      document.documentElement.style.backgroundColor = '';
-      document.body.style.backgroundColor = '';
+      if (isMobile) {
+        document.documentElement.style.height = '';
+        document.documentElement.style.backgroundColor = '';
+        document.body.style.backgroundColor = '';
+      }
       events.forEach(e => window.removeEventListener(e, handleOrientationChange));
     };
-}, []);
+  }, [isMobile]);
 
   useEffect(() => {
-    // Если все игроки касаются своих кружочков
     if (activeCount === playersCount) {
       setShowProgress(true);
-      
-      // Запускаем таймер прогресса
+
       let progress = 0;
       setHoldProgress(0);
       holdTimer.current = setInterval(() => {
         progress += 100;
         setHoldProgress(progress);
-        
-        // Если прошло 2 секунды
+
         if (progress >= 2000) {
           clearInterval(holdTimer.current!);
           holdTimer.current = null;
-          
+
           if (navigator.vibrate) {
-            navigator.vibrate(200); // Вибрация
+            navigator.vibrate(200);
           }
-          
+
           navigate("/game", { state });
         }
       }, 100);
     } else {
-      // Если не все удерживают - сбрасываем прогресс
       setShowProgress(false);
       if (holdTimer.current) {
         clearInterval(holdTimer.current);
@@ -96,7 +110,7 @@ export default function TouchScreen() {
         clearInterval(holdTimer.current);
       }
     };
-  }, [activeCount, playersCount]);
+  }, [activeCount, playersCount, navigate, state]);
 
   const handleTouchStart = (index: number) => {
     const updatedTouches = [...activeTouches];
@@ -104,7 +118,7 @@ export default function TouchScreen() {
     setActiveTouches(updatedTouches);
 
     if (navigator.vibrate) {
-      navigator.vibrate(100); // Вибрация при касании
+      navigator.vibrate(100);
     }
   };
 
@@ -117,49 +131,68 @@ export default function TouchScreen() {
   const getProgressPercentage = () => Math.min(holdProgress / 2000, 1) * 100;
 
   const getTouchPosition = (index: number) => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    if (playersCount === 2) {
-      return {
-        top: (index === 0 ? height * 0.3 : height * 0.6) - 40,
-        left: width * 0.5 - 40,
-      };
+    const width = windowSize.width;
+    const height = windowSize.height;
+    const circleSize = 80; // Размер круга (width/height = 80px)
+  
+    switch (playersCount) {
+      case 2:
+        return {
+          top: height * (index === 0 ? 0.3 : 0.6) - circleSize/2,
+          left: width * 0.5 - circleSize/2,
+        };
+      
+      case 3:
+        return {
+          top: height * (index === 0 ? 0.2 : index === 1 ? 0.45 : 0.7) - circleSize/2,
+          left: width * 0.5 - circleSize/2,
+        };
+      
+      case 4:
+        // Умная адаптация - учитываем соотношение сторон экрана
+        const isWideScreen = width / height > 1.5;
+        const baseSpacing = Math.min(width, height) * 0.3; // Базовое расстояние
+        
+        // Для очень широких экранов добавляем ограничение
+        const maxSpacing = isWideScreen ? width * 0.25 : baseSpacing;
+        const spacing = Math.min(baseSpacing, maxSpacing);
+        
+        const col4 = index % 2;
+        const row4 = Math.floor(index / 2);
+        
+        return {
+          left: width * 0.5 + (col4 ? spacing : -spacing) - circleSize/2,
+          top: height * 0.5 + (row4 ? spacing * 0.9 : -spacing * 0.9) - circleSize/2,
+        };
+      case 5:
+        // Центральный круг + 4 по углам
+        const radius = Math.min(width, height) * 0.35;
+        // Центр экрана
+        const centerX = width / 2;
+        const centerY = height / 2;
+        // Угол между кружками (72 градуса для 5 точек)
+        const angle = (index * 72 * Math.PI) / 180;
+        
+        return {
+          left: centerX + Math.sin(angle) * radius - circleSize/2,
+          top: centerY - Math.cos(angle) * radius - circleSize/2
+        };
+      
+      default:
+        return { left: 0, top: 0 };
     }
-
-    if (playersCount === 3) {
-      return {
-        top: (index === 0 ? height * 0.2 : index === 1 ? height * 0.45 : height * 0.7) - 40,
-        left: width * 0.5 - 40,
-      };
-    }
-
-    if (playersCount === 4) {
-      return {
-        left: (index === 0 ? width * 0.25 : index === 1 ? width * 0.75 : index === 2 ? width * 0.25 : width * 0.75) - 40,
-        top: index < 2 ? height * 0.3 - 40 : height * 0.6 - 40,
-      };
-    }
-
-    if (playersCount === 5) {
-      return {
-        left: (index === 0 ? width * 0.3 : index === 1 ? width * 0.7 : index === 2 ? width * 0.2 : index === 3 ? width * 0.8 : width * 0.5) - 40,
-        top: index === 2 ? height * 0.5 - 40: index === 3 ? height * 0.5 - 40 : index < 2 ? height * 0.3 - 40 : height * 0.65 - 40,
-      };
-    }
-
-    return { left: 0, top: 0 };
   };
+
+  const showOrientationWarning = !isPortrait && isMobile;
 
   return (
     <div className="fixed inset-0 overflow-hidden select-none">
-      {/* Модальное окно для альбомной ориентации */}
-      {!isPortrait && (
-        <div className="fixed inset-0 bg-black bg-opacity-100 z-50 flex items-center justify-center p-4 text-black">
-          <div className="bg-white rounded-lg p-6 max-w-md text-center">
+      {showOrientationWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-100 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md text-center text-black">
             <h2 className="text-2xl font-bold mb-4">Пожалуйста, поверните телефон</h2>
             <p className="text-lg mb-4">Для игры требуется портретная ориентация экрана</p>
-            <div className="text-5xl">↻  📱  ↻</div>
+            <div className="text-5xl">📱</div>
           </div>
         </div>
       )}
@@ -210,7 +243,7 @@ export default function TouchScreen() {
         {new Array(playersCount).fill(0).map((_, index) => {
           const position = getTouchPosition(index);
           return (
-            <div 
+            <div
               key={index}
               className="absolute"
               style={{
@@ -218,14 +251,12 @@ export default function TouchScreen() {
                 top: `${position.top}px`,
               }}
             >
-              {/* Добавляем номер игрока над кружочком */}
-              <div 
+              <div
                 className="text-center text-2xl italic font-medium text-yellow-200 mb-0.5"
                 style={{ transform: 'translateY(-10px)' }}
               >
                 {index + 1}
               </div>
-              {/* Сам кружочек */}
               <div
                 className={`w-24 h-24 rounded-full transition-all duration-300 ${
                   activeTouches[index] ? "bg-green-500 scale-110" : "bg-gray-300"

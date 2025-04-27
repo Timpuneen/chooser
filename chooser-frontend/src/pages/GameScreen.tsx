@@ -43,7 +43,7 @@ export default function GameScreen() {
     if (gameType === "tasks") {
       if (useAI) {
         try {
-          const response = await fetch(`http://localhost:8000/task/ai?difficulty=${difficulty}`);
+          const response = await fetch(`http://192.168.1.50:8000/task/ai?difficulty=${difficulty}`);
           if (!response.ok) throw new Error("Ошибка AI");
           const data = await response.json();
           setTask(data.task);
@@ -52,7 +52,7 @@ export default function GameScreen() {
         }
       } else {
         try {
-          const response = await fetch(`http://localhost:8000/task/random?difficulty=${difficulty}`);
+          const response = await fetch(`http://192.168.1.50:8000/task/random?difficulty=${difficulty}`);
           if (!response.ok) {
             throw new Error("Ошибка запроса");
           }

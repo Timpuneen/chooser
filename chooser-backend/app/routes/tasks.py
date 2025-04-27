@@ -9,7 +9,6 @@ from ..database import SessionLocal
 
 router = APIRouter()
 
-# Зависимость для получения сессии БД
 def get_db():
     db = SessionLocal()
     try:
@@ -30,9 +29,9 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 async def get_ai_task(difficulty: str = "normal"):
     try:
         difficulty_prompt = {
-            "easy": "для детей",
-            "normal": "для вечеринки",
-            "hard": "очень смелое или странное"
+            "easy": "для детей(легкое)",
+            "normal": "для вечеринки(среднее)",
+            "hard": "очень смелое или странное(сложное)"
         }.get(difficulty, "для вечеринки")
 
         prompt = f"Придумай короткое, весёлое задание {difficulty_prompt}, которое можно выполнить за 1 минуту. Только само задание, без пояснений."

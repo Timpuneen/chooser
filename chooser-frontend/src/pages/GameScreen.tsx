@@ -178,7 +178,7 @@ export default function GameScreen() {
         setTask(useAI ? data.task : data.text);
         setShowTaskPopup(true);
       } catch {
-        setTask("Не удалось получить задание 😢");
+        setTask("Не удалось получить задание :(");
         setShowTaskPopup(true);
       }
     } else if (eliminationMode) {
@@ -220,16 +220,13 @@ export default function GameScreen() {
 
   return (
     <div className="fixed inset-0 overflow-hidden select-none">
-      {/* Основной контент игры */}
       <div className="relative h-full w-full">
-        {/* Заголовок */}
         <div className="absolute top-10 w-full px-4 z-20">
           <div className="max-w-lg mx-auto text-center">
             <h2 className="text-2xl font-bold text-white">Выбор игрока</h2>
           </div>
         </div>
 
-        {/* Кружочки игроков */}
         <div className="absolute w-full h-[calc(100vh-200px)] flex justify-center items-center">
           {players.map((p) => {
             const position = getTouchPosition(p.id);
@@ -262,7 +259,6 @@ export default function GameScreen() {
           })}
         </div>
 
-        {/* Кнопки управления */}
         <div className="absolute bottom-8 w-full px-4 z-20">
           <div className="max-w-lg mx-auto flex justify-center gap-4">
             <button
@@ -281,7 +277,6 @@ export default function GameScreen() {
           </div>
         </div>
 
-        {/* Попап с заданием (z-30) */}
         {showTaskPopup && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-30 p-4">
             <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
@@ -323,7 +318,6 @@ export default function GameScreen() {
         )}
       </div>
 
-      {/* Попап победителя (z-50) */}
       {showWinnerPopup && winnerId !== null && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-40 p-4">
           <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl p-8 max-w-md w-full shadow-2xl text-center">
@@ -342,7 +336,6 @@ export default function GameScreen() {
         </div>
       )}
 
-      {/* Предупреждение о повороте (z-40) */}
       {showOrientationWarning && (
         <div className="fixed inset-0 bg-black bg-opacity-100 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 max-w-md text-center text-black">

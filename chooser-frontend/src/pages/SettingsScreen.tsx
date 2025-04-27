@@ -140,7 +140,7 @@ export default function SettingsScreen() {
         <select
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value)}
-          className="w-full bg-gray-800 text-white p-3 rounded-2xl text-lg focus:outline-none"
+          className="w-full bg-gray-800 text-white p-3 rounded-2xl text-lg focus:outline-none appearance-none"
         >
           <option value="easy">Лёгкая</option>
           <option value="normal">Средняя</option>

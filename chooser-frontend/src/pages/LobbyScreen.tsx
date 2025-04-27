@@ -5,9 +5,9 @@ export default function LobbyScreen() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Примем настройки из предыдущего экрана (пока через location.state)
+  //settings from prev screen
   const settings = location.state || {
-    playersCount: 3, // запасной вариант
+    playersCount: 3, 
   };
 
   const [connected, setConnected] = useState(0);
@@ -24,7 +24,7 @@ export default function LobbyScreen() {
         }
         return next;
       });
-    }, 1000); // Каждую секунду добавляется "палец"
+    }, 1000); 
 
     return () => clearInterval(interval);
   }, []);

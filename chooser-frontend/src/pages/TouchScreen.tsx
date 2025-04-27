@@ -27,7 +27,6 @@ export default function TouchScreen() {
     height: window.innerHeight,
   });
 
-  // Количество активных касаний
   const activeCount = activeTouches.filter(Boolean).length;
 
   useEffect(() => {
@@ -109,16 +108,10 @@ export default function TouchScreen() {
   useEffect(() => {
     const handleDocumentTouchStart = (e: TouchEvent) => {
       
-      // Получаем все активные касания
       const allTouches = Array.from(e.touches);
-      
-      // Сбрасываем все текущие касания
       setActiveTouches(new Array(playersCount).fill(false));
-      
-      // Временный массив для новых активных касаний
       const newActiveTouches = new Array(playersCount).fill(false);
-      
-      // Проверяем все активные касания
+
       allTouches.forEach((touch) => {
         const element = document.elementFromPoint(
           touch.clientX, 
@@ -131,10 +124,8 @@ export default function TouchScreen() {
             10
           );
           
-          // Обновляем временный массив
+
           newActiveTouches[playerIndex] = true;
-          
-          // Обновляем карту касаний
           touchesMap.current.set(touch.identifier, {
             id: touch.identifier,
             playerIndex
@@ -142,27 +133,28 @@ export default function TouchScreen() {
         }
       });
       
-      // Применяем все изменения сразу
+
       setActiveTouches(newActiveTouches);
       
-      // Вибрация только при новом касании
+      if ("vibrate" in navigator) {
+        console.log("Вибрация поддерживается");
+      } else {
+        console.log("Вибрация не поддерживается");
+      }
+
+      //ne osobo rabotaet
       if (e.changedTouches.length > 0 && navigator.vibrate) {
         navigator.vibrate(30);
       }
     };
     
     const handleDocumentTouchEnd = (e: TouchEvent) => {
-      // Получаем все еще активные касания
       const remainingTouches = new Set<number>();
       Array.from(e.touches).forEach(t => remainingTouches.add(t.identifier));
       
-      // Сбрасываем все текущие касания
       setActiveTouches(new Array(playersCount).fill(false));
       
-      // Временный массив для новых активных касаний
       const newActiveTouches = new Array(playersCount).fill(false);
-      
-      // Обновляем карту касаний и собираем активные
       touchesMap.current.forEach((touchData, identifier) => {
         if (remainingTouches.has(identifier)) {
           newActiveTouches[touchData.playerIndex] = true;
@@ -171,7 +163,6 @@ export default function TouchScreen() {
         }
       });
       
-      // Проверяем новые завершенные касания
       Array.from(e.changedTouches).forEach((touch) => {
         const element = document.elementFromPoint(
           touch.clientX, 
@@ -238,29 +229,25 @@ export default function TouchScreen() {
           const spacing5 = Math.min(baseSpacing5, maxSpacing5);
         
           if (index === 0) {
-            // Центральный верхний кружок
             return {
               left: width * 0.5 - circleSize / 2,
               top: height * 0.46 - spacing5 * 1.8 - circleSize / 2,
             };
           } else {
-            // Остальные кружки по сторонам
             const col5 = (index - 1) % 2;
             const row5 = Math.floor((index - 1) / 2);
         
             if (row5 === 0) {
-              // Центральные кружки
               return {
                 left: width * 0.5 + (col5 ? spacing5 : -spacing5) - circleSize / 2,
                 top: height * 0.45 - circleSize / 2,
               };
             } else {
-              // Нижние кружки (уменьшаем горизонтальное расстояние для нижних двух)
-              const reducedSpacing = spacing5 * 0.75;  // Уменьшаем горизонтальное расстояние для нижних кружков
+              const reducedSpacing = spacing5 * 0.75; 
         
               return {
                 left: width * 0.5 + (col5 ? reducedSpacing : -reducedSpacing) - circleSize / 2,
-                top: height * 0.75 - circleSize / 2,  // Нижний уровень
+                top: height * 0.75 - circleSize / 2, 
               };
             }
           }

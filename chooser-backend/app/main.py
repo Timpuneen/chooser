@@ -17,8 +17,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Создаём таблицы
-# models.Base.metadata.create_all(bind=engine)
+#models.Base.metadata.create_all(bind=engine)
 
-# Подключаем роутер
 app.include_router(tasks.router)

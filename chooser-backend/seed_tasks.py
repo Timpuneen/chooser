@@ -7,6 +7,7 @@ tasks = [
     {"text": "Расскажи анекдот", "difficulty": "normal"},
     {"text": "Изобрази животное", "difficulty": "easy"},
     {"text": "Станцуй 10 секунд", "difficulty": "hard"},
+    {"text": "Станцуй 10 секунд", "difficulty": "hard"},
 ]
 
 db = SessionLocal()
@@ -15,4 +16,4 @@ for task in tasks:
 db.commit()
 db.close()
 
-print("✅ Задания добавлены в базу")
+print("Задания добавлены в базу")

@@ -4,8 +4,9 @@ import random
 import os
 from openai import OpenAI
 
-from .. import models, schemas
-from ..database import SessionLocal
+from models import models
+from schemas import shcemas
+from database import SessionLocal
 
 router = APIRouter()
 

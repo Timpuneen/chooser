@@ -102,17 +102,39 @@ export default function GameScreen() {
           left: width * 0.5 + (col4 ? spacing : -spacing) - circleSize / 2,
           top: height * 0.5 + (row4 ? spacing * 0.9 : -spacing * 0.9) - circleSize / 2,
         };
-      case 5:
-        const radius = Math.min(width, height) * 0.35;
-        const centerX = width / 2;
-        const centerY = height / 2;
-        const angle = (index * 72 * Math.PI) / 180;
-        return {
-          left: centerX + Math.sin(angle) * radius - circleSize / 2,
-          top: centerY - Math.cos(angle) * radius - circleSize / 2,
-        };
-      default:
-        return { left: 0, top: 0 };
+        case 5:
+          const isWideScreen5 = width / height > 1.5;
+          const baseSpacing5 = Math.min(width, height) * 0.3;
+          const maxSpacing5 = isWideScreen5 ? width * 0.25 : baseSpacing5;
+          const spacing5 = Math.min(baseSpacing5, maxSpacing5);
+        
+          if (index === 0) {
+            // Центральный верхний кружок
+            return {
+              left: width * 0.5 - circleSize / 2,
+              top: height * 0.52 - spacing5 * 1.8 - circleSize / 2,
+            };
+          } else {
+            // Остальные кружки по сторонам
+            const col5 = (index - 1) % 2;
+            const row5 = Math.floor((index - 1) / 2);
+        
+            if (row5 === 0) {
+              // Центральные кружки
+              return {
+                left: width * 0.5 + (col5 ? spacing5 : -spacing5) - circleSize / 2,
+                top: height * 0.45 - circleSize / 2,
+              };
+            } else {
+              // Нижние кружки (уменьшаем горизонтальное расстояние для нижних двух)
+              const reducedSpacing = spacing5 * 0.75;  // Уменьшаем горизонтальное расстояние для нижних кружков
+        
+              return {
+                left: width * 0.5 + (col5 ? reducedSpacing : -reducedSpacing) - circleSize / 2,
+                top: height * 0.7 - circleSize / 2,  // Нижний уровень
+              };
+            }
+          }
     }
   };
 
@@ -209,7 +231,7 @@ export default function GameScreen() {
           <div className="bg-white rounded-lg p-6 max-w-md text-center text-black">
             <h2 className="text-2xl font-bold mb-4">Пожалуйста, поверните телефон</h2>
             <p className="text-lg mb-4">Для игры требуется портретная ориентация экрана</p>
-            <div className="text-5xl">📱</div>
+            <div className="text-5xl">↻ 📱 ↻</div>
           </div>
         </div>
       )}
@@ -236,8 +258,8 @@ export default function GameScreen() {
               key={p.id}
               className="absolute transition-all duration-300"
               style={{
-                left: `${position.left}px`,
-                top: `${position.top}px`,
+                left: `${position?.left ?? 0}px`,
+                top: `${position?.top ?? 0}px`,
               }}
             >
               <div

@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+type TouchData = {
+  id: number;
+  playerIndex: number;
+};
+
 export default function TouchScreen() {
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -9,6 +14,7 @@ export default function TouchScreen() {
   const [activeTouches, setActiveTouches] = useState<boolean[]>(
     new Array(playersCount).fill(false)
   );
+  const touchesMap = useRef<Map<number, TouchData>>(new Map());
   const holdTimer = useRef<NodeJS.Timeout | null>(null);
   const [holdProgress, setHoldProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
@@ -30,8 +36,7 @@ export default function TouchScreen() {
 
     const checkIfMobile = () => {
       const userAgent = navigator.userAgent.toLowerCase();
-      const isMobileCheck = /iphone|ipod|android|windows phone|mobile/i.test(userAgent);
-      setIsMobile(isMobileCheck);
+      setIsMobile(/iphone|ipod|android|windows phone|mobile/i.test(userAgent));
     };
 
     const handleOrientationChange = () => {
@@ -41,21 +46,15 @@ export default function TouchScreen() {
         width: window.innerWidth,
         height: window.innerHeight,
       });
+      
       if (isMobile) {
-        // Только на мобильных меняем стили
         document.documentElement.style.height = '100%';
-
-        document.documentElement.style.setProperty(
-          'background-color',
-          portrait ? PORTRAIT_BG_COLOR : LANDSCAPE_BG_COLOR,
-          'important'
-        );
-
-        document.body.style.setProperty(
-          'background-color',
-          portrait ? PORTRAIT_BG_COLOR : LANDSCAPE_BG_COLOR,
-          'important'
-        );
+        document.documentElement.style.backgroundColor = portrait 
+          ? PORTRAIT_BG_COLOR 
+          : LANDSCAPE_BG_COLOR;
+        document.body.style.backgroundColor = portrait 
+          ? PORTRAIT_BG_COLOR 
+          : LANDSCAPE_BG_COLOR;
       }
     };
 
@@ -78,9 +77,9 @@ export default function TouchScreen() {
   useEffect(() => {
     if (activeCount === playersCount) {
       setShowProgress(true);
-
       let progress = 0;
       setHoldProgress(0);
+      
       holdTimer.current = setInterval(() => {
         progress += 100;
         setHoldProgress(progress);
@@ -89,10 +88,7 @@ export default function TouchScreen() {
           clearInterval(holdTimer.current!);
           holdTimer.current = null;
 
-          if (navigator.vibrate) {
-            navigator.vibrate(200);
-          }
-
+          if (navigator.vibrate) navigator.vibrate(200);
           navigate("/game", { state });
         }
       }, 100);
@@ -106,57 +102,130 @@ export default function TouchScreen() {
     }
 
     return () => {
-      if (holdTimer.current) {
-        clearInterval(holdTimer.current);
-      }
+      if (holdTimer.current) clearInterval(holdTimer.current);
     };
   }, [activeCount, playersCount, navigate, state]);
 
-  const handleTouchStart = (index: number) => {
-    const updatedTouches = [...activeTouches];
-    updatedTouches[index] = true;
-    setActiveTouches(updatedTouches);
+  useEffect(() => {
+    const handleDocumentTouchStart = (e: TouchEvent) => {
+      // Предотвращаем стандартное поведение для мультитача
+      e.preventDefault();
+      
+      // Получаем все активные касания
+      const allTouches = Array.from(e.touches);
+      
+      // Сбрасываем все текущие касания
+      setActiveTouches(new Array(playersCount).fill(false));
+      
+      // Временный массив для новых активных касаний
+      const newActiveTouches = new Array(playersCount).fill(false);
+      
+      // Проверяем все активные касания
+      allTouches.forEach((touch) => {
+        const element = document.elementFromPoint(
+          touch.clientX, 
+          touch.clientY
+        ) as HTMLElement | null;
+    
+        if (element?.closest('.player-touch-area')) {
+          const playerIndex = parseInt(
+            element.closest('.player-touch-area')?.getAttribute('data-player-index') || '0', 
+            10
+          );
+          
+          // Обновляем временный массив
+          newActiveTouches[playerIndex] = true;
+          
+          // Обновляем карту касаний
+          touchesMap.current.set(touch.identifier, {
+            id: touch.identifier,
+            playerIndex
+          });
+        }
+      });
+      
+      // Применяем все изменения сразу
+      setActiveTouches(newActiveTouches);
+      
+      // Вибрация только при новом касании
+      if (e.changedTouches.length > 0 && navigator.vibrate) {
+        navigator.vibrate(30);
+      }
+    };
+    
+    const handleDocumentTouchEnd = (e: TouchEvent) => {
+      // Получаем все еще активные касания
+      const remainingTouches = new Set<number>();
+      Array.from(e.touches).forEach(t => remainingTouches.add(t.identifier));
+      
+      // Сбрасываем все текущие касания
+      setActiveTouches(new Array(playersCount).fill(false));
+      
+      // Временный массив для новых активных касаний
+      const newActiveTouches = new Array(playersCount).fill(false);
+      
+      // Обновляем карту касаний и собираем активные
+      touchesMap.current.forEach((touchData, identifier) => {
+        if (remainingTouches.has(identifier)) {
+          newActiveTouches[touchData.playerIndex] = true;
+        } else {
+          touchesMap.current.delete(identifier);
+        }
+      });
+      
+      // Проверяем новые завершенные касания
+      Array.from(e.changedTouches).forEach((touch) => {
+        const element = document.elementFromPoint(
+          touch.clientX, 
+          touch.clientY
+        ) as HTMLElement | null;
+    
+        if (element?.closest('.player-touch-area')) {
+          const playerIndex = parseInt(
+            element.closest('.player-touch-area')?.getAttribute('data-player-index') || '0', 
+            10
+          );
+          newActiveTouches[playerIndex] = false;
+        }
+      });
+      
+      setActiveTouches(newActiveTouches);
+    };
 
-    if (navigator.vibrate) {
-      navigator.vibrate(100);
-    }
-  };
+    document.addEventListener('touchstart', handleDocumentTouchStart);
+    document.addEventListener('touchend', handleDocumentTouchEnd);
+    document.addEventListener('touchcancel', handleDocumentTouchEnd);
 
-  const handleTouchEnd = (index: number) => {
-    const updatedTouches = [...activeTouches];
-    updatedTouches[index] = false;
-    setActiveTouches(updatedTouches);
-  };
+    return () => {
+      document.removeEventListener('touchstart', handleDocumentTouchStart);
+      document.removeEventListener('touchend', handleDocumentTouchEnd);
+      document.removeEventListener('touchcancel', handleDocumentTouchEnd);
+    };
+  }, []);
 
   const getProgressPercentage = () => Math.min(holdProgress / 2000, 1) * 100;
 
   const getTouchPosition = (index: number) => {
     const width = windowSize.width;
     const height = windowSize.height;
-    const circleSize = 80; // Размер круга (width/height = 80px)
-  
+    const circleSize = 80;
+
     switch (playersCount) {
       case 2:
         return {
           top: height * (index === 0 ? 0.3 : 0.6) - circleSize/2,
           left: width * 0.5 - circleSize/2,
         };
-      
       case 3:
         return {
           top: height * (index === 0 ? 0.2 : index === 1 ? 0.45 : 0.7) - circleSize/2,
           left: width * 0.5 - circleSize/2,
         };
-      
       case 4:
-        // Умная адаптация - учитываем соотношение сторон экрана
         const isWideScreen = width / height > 1.5;
-        const baseSpacing = Math.min(width, height) * 0.3; // Базовое расстояние
-        
-        // Для очень широких экранов добавляем ограничение
+        const baseSpacing = Math.min(width, height) * 0.3;
         const maxSpacing = isWideScreen ? width * 0.25 : baseSpacing;
         const spacing = Math.min(baseSpacing, maxSpacing);
-        
         const col4 = index % 2;
         const row4 = Math.floor(index / 2);
         
@@ -164,20 +233,39 @@ export default function TouchScreen() {
           left: width * 0.5 + (col4 ? spacing : -spacing) - circleSize/2,
           top: height * 0.5 + (row4 ? spacing * 0.9 : -spacing * 0.9) - circleSize/2,
         };
-      case 5:
-        // Центральный круг + 4 по углам
-        const radius = Math.min(width, height) * 0.35;
-        // Центр экрана
-        const centerX = width / 2;
-        const centerY = height / 2;
-        // Угол между кружками (72 градуса для 5 точек)
-        const angle = (index * 72 * Math.PI) / 180;
+        case 5:
+          const isWideScreen5 = width / height > 1.5;
+          const baseSpacing5 = Math.min(width, height) * 0.3;
+          const maxSpacing5 = isWideScreen5 ? width * 0.25 : baseSpacing5;
+          const spacing5 = Math.min(baseSpacing5, maxSpacing5);
         
-        return {
-          left: centerX + Math.sin(angle) * radius - circleSize/2,
-          top: centerY - Math.cos(angle) * radius - circleSize/2
-        };
-      
+          if (index === 0) {
+            // Центральный верхний кружок
+            return {
+              left: width * 0.5 - circleSize / 2,
+              top: height * 0.46 - spacing5 * 1.8 - circleSize / 2,
+            };
+          } else {
+            // Остальные кружки по сторонам
+            const col5 = (index - 1) % 2;
+            const row5 = Math.floor((index - 1) / 2);
+        
+            if (row5 === 0) {
+              // Центральные кружки
+              return {
+                left: width * 0.5 + (col5 ? spacing5 : -spacing5) - circleSize / 2,
+                top: height * 0.45 - circleSize / 2,
+              };
+            } else {
+              // Нижние кружки (уменьшаем горизонтальное расстояние для нижних двух)
+              const reducedSpacing = spacing5 * 0.75;  // Уменьшаем горизонтальное расстояние для нижних кружков
+        
+              return {
+                left: width * 0.5 + (col5 ? reducedSpacing : -reducedSpacing) - circleSize / 2,
+                top: height * 0.75 - circleSize / 2,  // Нижний уровень
+              };
+            }
+          }
       default:
         return { left: 0, top: 0 };
     }
@@ -192,7 +280,7 @@ export default function TouchScreen() {
           <div className="bg-white rounded-lg p-6 max-w-md text-center text-black">
             <h2 className="text-2xl font-bold mb-4">Пожалуйста, поверните телефон</h2>
             <p className="text-lg mb-4">Для игры требуется портретная ориентация экрана</p>
-            <div className="text-5xl">📱</div>
+            <div className="text-5xl">↻ 📱 ↻</div>
           </div>
         </div>
       )}
@@ -258,11 +346,10 @@ export default function TouchScreen() {
                 {index + 1}
               </div>
               <div
-                className={`w-24 h-24 rounded-full transition-all duration-300 ${
+                className={`w-24 h-24 rounded-full transition-all duration-300 player-touch-area ${
                   activeTouches[index] ? "bg-green-500 scale-110" : "bg-gray-300"
                 }`}
-                onTouchStart={() => handleTouchStart(index)}
-                onTouchEnd={() => handleTouchEnd(index)}
+                data-player-index={index}
               />
             </div>
           );

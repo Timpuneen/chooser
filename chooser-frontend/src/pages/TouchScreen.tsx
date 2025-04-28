@@ -26,8 +26,17 @@ export default function TouchScreen() {
     width: window.innerWidth,
     height: window.innerHeight,
   });
+  const [circlesVisible, setCirclesVisible] = useState(false);
 
   const activeCount = activeTouches.filter(Boolean).length;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCirclesVisible(true);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const PORTRAIT_BG_COLOR = "rgb(17, 24, 39)";
@@ -107,7 +116,6 @@ export default function TouchScreen() {
 
   useEffect(() => {
     const handleDocumentTouchStart = (e: TouchEvent) => {
-      
       const allTouches = Array.from(e.touches);
       setActiveTouches(new Array(playersCount).fill(false));
       const newActiveTouches = new Array(playersCount).fill(false);
@@ -124,7 +132,6 @@ export default function TouchScreen() {
             10
           );
           
-
           newActiveTouches[playerIndex] = true;
           touchesMap.current.set(touch.identifier, {
             id: touch.identifier,
@@ -133,13 +140,7 @@ export default function TouchScreen() {
         }
       });
       
-
       setActiveTouches(newActiveTouches);
-
-      //ne osobo rabotaet
-      // if (e.changedTouches.length > 0 && navigator.vibrate) {
-      //   navigator.vibrate(30);
-      // }
     };
     
     const handleDocumentTouchEnd = (e: TouchEvent) => {
@@ -175,16 +176,59 @@ export default function TouchScreen() {
       setActiveTouches(newActiveTouches);
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isMobile) return;
+      
+      const key = e.key;
+      if (key >= '1' && key <= '5') {
+        const playerIndex = parseInt(key) - 1;
+        if (playerIndex < playersCount) {
+          setActiveTouches(prev => {
+            const newTouches = [...prev];
+            newTouches[playerIndex] = true;
+            return newTouches;
+          });
+          
+          touchesMap.current.set(playerIndex + 1000, { 
+            id: playerIndex + 1000,
+            playerIndex
+          });
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (isMobile) return;
+      
+      const key = e.key;
+      if (key >= '1' && key <= '5') {
+        const playerIndex = parseInt(key) - 1;
+        if (playerIndex < playersCount) {
+          setActiveTouches(prev => {
+            const newTouches = [...prev];
+            newTouches[playerIndex] = false;
+            return newTouches;
+          });
+          
+          touchesMap.current.delete(playerIndex + 1000);
+        }
+      }
+    };
+
     document.addEventListener('touchstart', handleDocumentTouchStart);
     document.addEventListener('touchend', handleDocumentTouchEnd);
     document.addEventListener('touchcancel', handleDocumentTouchEnd);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
 
     return () => {
       document.removeEventListener('touchstart', handleDocumentTouchStart);
       document.removeEventListener('touchend', handleDocumentTouchEnd);
       document.removeEventListener('touchcancel', handleDocumentTouchEnd);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [playersCount, isMobile]);
 
   const getProgressPercentage = () => Math.min(holdProgress / 2000, 1) * 100;
 
@@ -198,11 +242,15 @@ export default function TouchScreen() {
         return {
           top: height * (index === 0 ? 0.3 : 0.6) - circleSize/2,
           left: width * 0.5 - circleSize/2,
+          initialOffsetX: index === 0 ? -100 : 100,
+          initialOffsetY: index === 0 ? -100 : 100
         };
       case 3:
         return {
           top: height * (index === 0 ? 0.2 : index === 1 ? 0.45 : 0.7) - circleSize/2,
           left: width * 0.5 - circleSize/2,
+          initialOffsetX: index === 1 ? 150 : -150,
+          initialOffsetY: index === 0 ? -30 : index === 1 ? 30 : 60
         };
       case 4:
         const isWideScreen = width / height > 1.5;
@@ -212,41 +260,66 @@ export default function TouchScreen() {
         const col4 = index % 2;
         const row4 = Math.floor(index / 2);
         
+        let initialOffsetX = 0;
+        let initialOffsetY = 0;
+        
+        if (col4 === 0 && row4 === 0) {
+          initialOffsetX = -200;
+          initialOffsetY = -100;
+        } else if (col4 === 1 && row4 === 0) {
+          initialOffsetX = 200;
+          initialOffsetY = -100;
+        } else if (col4 === 0 && row4 === 1) {
+          initialOffsetX = -200;
+          initialOffsetY = 100;
+        } else {
+          initialOffsetX = 200;
+          initialOffsetY = 100;
+        }
+        
         return {
           left: width * 0.5 + (col4 ? spacing : -spacing) - circleSize/2,
           top: height * 0.5 + (row4 ? spacing * 0.9 : -spacing * 0.9) - circleSize/2,
+          initialOffsetX,
+          initialOffsetY
         };
-        case 5:
-          const isWideScreen5 = width / height > 1.5;
-          const baseSpacing5 = Math.min(width, height) * 0.3;
-          const maxSpacing5 = isWideScreen5 ? width * 0.25 : baseSpacing5;
-          const spacing5 = Math.min(baseSpacing5, maxSpacing5);
-        
-          if (index === 0) {
+      case 5:
+        const isWideScreen5 = width / height > 1.5;
+        const baseSpacing5 = Math.min(width, height) * 0.3;
+        const maxSpacing5 = isWideScreen5 ? width * 0.25 : baseSpacing5;
+        const spacing5 = Math.min(baseSpacing5, maxSpacing5);
+      
+        if (index === 0) {
+          return {
+            left: width * 0.5 - circleSize / 2,
+            top: height * 0.18 - circleSize / 2,
+            initialOffsetX: 0,
+            initialOffsetY: -100
+          };
+        } else {
+          const col5 = (index - 1) % 2;
+          const row5 = Math.floor((index - 1) / 2);
+      
+          if (row5 === 0) {
             return {
-              left: width * 0.5 - circleSize / 2,
-              top: height * 0.18 - circleSize / 2
+              left: width * 0.5 + (col5 ? spacing5 : -spacing5) - circleSize / 2,
+              top: height * 0.45 - circleSize / 2,
+              initialOffsetX: col5 ? 200 : -200,
+              initialOffsetY: 0
             };
           } else {
-            const col5 = (index - 1) % 2;
-            const row5 = Math.floor((index - 1) / 2);
-        
-            if (row5 === 0) {
-              return {
-                left: width * 0.5 + (col5 ? spacing5 : -spacing5) - circleSize / 2,
-                top: height * 0.45 - circleSize / 2,
-              };
-            } else {
-              const reducedSpacing = spacing5 * 0.75; 
-        
-              return {
-                left: width * 0.5 + (col5 ? reducedSpacing : -reducedSpacing) - circleSize / 2,
-                top: height * 0.75 - circleSize / 2, 
-              };
-            }
+            const reducedSpacing = spacing5 * 0.75; 
+      
+            return {
+              left: width * 0.5 + (col5 ? reducedSpacing : -reducedSpacing) - circleSize / 2,
+              top: height * 0.75 - circleSize / 2,
+              initialOffsetX: 0,
+              initialOffsetY: 100 
+            };
           }
+        }
       default:
-        return { left: 0, top: 0 };
+        return { left: 0, top: 0, initialOffset: 0 };
     }
   };
 
@@ -261,6 +334,12 @@ export default function TouchScreen() {
             <p className="text-lg mb-4">Для игры требуется портретная ориентация экрана</p>
             <div className="text-5xl">↻ 📱 ↻</div>
           </div>
+        </div>
+      )}
+
+      {!isMobile && (
+        <div className="fixed bottom-4 left-0 right-0 text-center text-gray-400 text-sm z-10">
+          Используйте клавиши 1-{playersCount} для имитации касаний
         </div>
       )}
 
@@ -279,7 +358,7 @@ export default function TouchScreen() {
                   cy="50"
                 />
                 <circle
-                  className="text-blue-500"
+                  className="text-yellow-200"
                   stroke="currentColor"
                   strokeWidth="10"
                   fill="transparent"
@@ -312,21 +391,30 @@ export default function TouchScreen() {
           return (
             <div
               key={index}
-              className="absolute"
+              className="absolute transition-all duration-700 ease-out"
               style={{
                 left: `${position.left}px`,
                 top: `${position.top}px`,
+                transform: circlesVisible 
+                  ? 'translate(0, 0)' 
+                  : `translate(${position.initialOffsetX}px, ${position.initialOffsetY}px)`,
+                opacity: circlesVisible ? 1 : 0
               }}
             >
               <div
-                className="text-center text-2xl italic font-medium text-yellow-200 mb-0.5"
-                style={{ transform: 'translateY(-10px)' }}
+                className="text-center text-2xl italic font-medium mb-0.5 transition-all duration-700"
+                style={{ 
+                  transform: circlesVisible ? 'translateY(-10px)' : 'translateY(-30px)',
+                  opacity: circlesVisible ? 1 : 0
+                }}
               >
                 {index + 1}
               </div>
               <div
                 className={`w-24 h-24 rounded-full transition-all duration-300 player-touch-area ${
-                  activeTouches[index] ? "bg-green-500 scale-110" : "bg-gray-300"
+                  activeTouches[index] 
+                    ? "bg-blue-600 scale-110" 
+                    : "bg-gray-400"
                 }`}
                 data-player-index={index}
               />

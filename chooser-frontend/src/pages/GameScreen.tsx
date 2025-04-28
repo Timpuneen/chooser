@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { FaPlay, FaRedo, FaInfoCircle, FaGithub, FaTelegram, FaInstagram } from "react-icons/fa";
 
 declare global {
   interface ImportMetaEnv {
@@ -15,11 +16,15 @@ export default function GameScreen() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
   const playersCount = state?.playersCount || 3;
   const eliminationMode = state?.eliminationMode || false;
   const gameType = state?.gameType || "simple";
   const useAI = state?.useAI || false;
   const difficulty = state?.difficulty || "normal";
+
+  const [animationComplete, setAnimationComplete] = useState(false);
+  const [visibleCircles, setVisibleCircles] = useState<number[]>([]);
 
   const [players, setPlayers] = useState(
     Array.from({ length: playersCount }, (_, i) => ({ id: i, active: true }))
@@ -39,6 +44,28 @@ export default function GameScreen() {
   const [winnerId, setWinnerId] = useState<number | null>(null);
   const [showWinnerPopup, setShowWinnerPopup] = useState(false);
   const [isTaskLoading, setIsTaskLoading] = useState(false);
+
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    setVisibleCircles([]);
+    setAnimationComplete(false);
+    
+    players.forEach((_, index) => {
+      timers.push(
+        setTimeout(() => {
+          setVisibleCircles(prev => [...prev, index]);
+          
+          if (index === players.length - 1) {
+            timers.push(
+              setTimeout(() => setAnimationComplete(true), 600) 
+            );
+          }
+        }, index * 200)
+      );
+    });
+  
+    return () => timers.forEach(timer => clearTimeout(timer));
+  }, [playersCount]);
 
   useEffect(() => {
     const PORTRAIT_BG_COLOR = "rgb(17, 24, 39)";
@@ -190,10 +217,6 @@ export default function GameScreen() {
     const chosen = activePlayers[randomIndex];
     setSelectedId(chosen.id);
 
-    if (navigator.vibrate) {
-      navigator.vibrate(200);
-    }
-
     if (gameType === "tasks") {
       setShowTaskPopup(true);
       fetchTask();
@@ -244,51 +267,68 @@ export default function GameScreen() {
         </div>
 
         <div className="absolute w-full h-[calc(100vh-200px)] flex justify-center items-center">
-          {players.map((p) => {
-            const position = getTouchPosition(p.id);
-            return (
+        {players.map((p) => {
+          const position = getTouchPosition(p.id);
+          const isVisible = visibleCircles.includes(p.id);
+          
+          return (
+            <div
+              key={p.id}
+              className="absolute transition-all duration-500 ease-out"
+              style={{
+                left: `${position?.left ?? 0}px`,
+                top: `${position?.top ?? 0}px`,
+                opacity: isVisible ? 1 : 0,
+                transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+              }}
+            >
               <div
-                key={p.id}
-                className="absolute transition-all duration-300"
-                style={{
-                  left: `${position?.left ?? 0}px`,
-                  top: `${position?.top ?? 0}px`,
+                className="text-center text-2xl italic font-medium text-white mb-0.5 transition-all duration-500"
+                style={{ 
+                  transform: isVisible ? 'translateY(-10px)' : 'translateY(-30px)',
+                  opacity: isVisible ? 1 : 0
                 }}
               >
-                <div
-                  className="text-center text-2xl italic font-medium text-yellow-200 mb-0.5"
-                  style={{ transform: "translateY(-10px)" }}
-                >
-                  {p.id + 1}
-                </div>
-                <div
-                  className={`w-24 h-24 rounded-full transition-all duration-200 ${
-                    !p.active
-                      ? "bg-gray-700"
-                      : selectedId === p.id
-                      ? "bg-yellow-400 scale-110"
-                      : "bg-white"
-                  }`}
-                />
+                {p.id + 1}
               </div>
-            );
-          })}
+              <div
+                className={`w-24 h-24 rounded-full transition-all duration-300 ${
+                  !p.active
+                    ? "bg-gray-700"
+                    : selectedId === p.id
+                    ? "bg-yellow-200 scale-110"
+                    : "bg-gray-400"
+                }`}
+              />
+            </div>
+          );
+        })}
         </div>
 
         <div className="absolute bottom-8 w-full px-4 z-20">
-          <div className="max-w-lg mx-auto flex justify-center gap-4">
+          <div className="max-w-lg mx-auto flex justify-center items-end gap-4">
             <button
-              className="bg-blue-700 px-6 py-3 rounded-xl text-white disabled:opacity-50 text-lg hover:bg-blue-600 transition-colors"
-              onClick={chooseRandomPlayer}
-              disabled={isChoosing || players.filter((p) => p.active).length <= 1}
+            className="bg-gray-400 p-3 rounded-full text-white transition-colors hover:bg-gray-500"
+            onClick={() => setShowInfoPopup(true)}
+            title="Информация об игре"
             >
-              Сделать выбор
+              <FaInfoCircle size={24} />
             </button>
             <button
-              className="bg-yellow-700 px-6 py-3 rounded-xl text-white text-lg hover:bg-yellow-600 transition-colors"
-              onClick={restartGame}
+              className="bg-blue-500 px-5 py-4 ml-3 mr-3 rounded-xl text-white disabled:opacity-50 text-2xl transition-colors flex items-center justify-center gap-2"
+              onClick={chooseRandomPlayer}
+              disabled={isChoosing || players.filter((p) => p.active).length <= 1 || !animationComplete}
+              title="Сделать выбор" 
             >
-              Перезапуск
+              <span>Выбор</span>
+              <FaPlay  size={35} />
+            </button>
+            <button
+            className="bg-gray-400 p-3 rounded-full text-white transition-colors hover:bg-gray-500"
+            onClick={restartGame}
+            title="Перезапуск"
+            >
+              <FaRedo size={24} />
             </button>
           </div>
         </div>
@@ -369,6 +409,87 @@ export default function GameScreen() {
             <h2 className="text-2xl font-bold mb-4">Пожалуйста, поверните телефон</h2>
             <p className="text-lg mb-4">Для игры требуется портретная ориентация экрана</p>
             <div className="text-5xl">↻ 📱 ↻</div>
+          </div>
+        </div>
+      )}
+
+      {showInfoPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-0 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-xl p-6 mp-6 max-w-md w-full shadow-lg flex flex-col" style={{ maxHeight: '85vh' }}>
+            <h3 className="text-2xl font-bold text-center mb-4 text-gray-800">
+              Правила игры
+            </h3>
+            
+            <div className="overflow-y-auto flex-grow pr-2 -mr-2">
+              <div className="space-y-4 mb-6">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-lg text-gray-800">
+                    <span className="font-bold">Простой режим:</span> приложение работает как рулетка, которая выбирает случайного игрока
+                  </p>
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-lg text-gray-800">
+                    <span className="font-bold">Режим с заданиями:</span> при каждом "прокруте" игрок должен выполнить выпашее ему задание
+                  </p>
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-lg text-gray-800">
+                    <span className="font-bold">Режим на выбывание:</span> если игрок не выполняет задание, то игрок выбывает. 
+                    Когда запущен простом режим с выбыванием, то игрок, который был выбран, выбывает из игры
+                  </p>
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-lg text-gray-800">
+                    <span className="font-bold">Функция AI:</span> задания генерируются при помощи AI вместо базы данных
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-lg text-gray-800">
+                    <span className="font-bold">Дополнительная информация:</span> Игра предназначена для веселых компаний и дружеских посиделок. 
+                    Используйте ее, чтобы сделать ваши встречи более интересными!
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="flex justify-center space-x-4 mb-6">
+                <a 
+                  href="https://github.com/timpuneen" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  <FaGithub size={28} />
+                </a>
+                <a 
+                  href="https://t.me/timpuheen" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700 transition-colors"
+                >
+                  <FaTelegram size={28} />
+                </a>
+                <a 
+                  href="https://instagram.com/timpuhin" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-pink-600 hover:text-pink-800 transition-colors"
+                >
+                  <FaInstagram size={28} />
+                </a>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowInfoPopup(false)}
+              className="bg-blue-500 text-white w-full py-3 rounded-lg hover:bg-blue-600 transition-colors mt-4"
+            >
+              Закрыть
+            </button>
           </div>
         </div>
       )}

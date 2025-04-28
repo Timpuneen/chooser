@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.routes import tasks
-# from . import models
-# from database import engine
+# from app import models
+# from app.database import engine
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 load_dotenv()

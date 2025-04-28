@@ -95,6 +95,7 @@
  Вот и все, на этом процесс установки завершен
 
 ## Далее можете ознакомиться с [demo review](https://www.youtube.com/shorts/CU8v7ZN5CbQ) проекта
+## [desktop review](https://youtu.be/u8WuD0pM59M)
 <div align="center">
   <a href="https://www.youtube.com/shorts/CU8v7ZN5CbQ">
     <img src="/readme images/rev.png" target="_blank" alt="review" width="512"/>

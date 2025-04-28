@@ -4,9 +4,9 @@ import random
 import os
 from openai import OpenAI
 
-import models
-import schemas
-from database import SessionLocal
+from app.models import Task
+from app.schemas import TaskOut
+from app.database import SessionLocal
 
 router = APIRouter()
 
@@ -17,9 +17,9 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/task/random", response_model=schemas.TaskOut)
+@router.get("/task/random", response_model=TaskOut)
 def get_random_task(difficulty: str = Query("normal"), db: Session = Depends(get_db)):
-    tasks = db.query(models.Task).filter(models.Task.difficulty == difficulty).all()
+    tasks = db.query(Task).filter(Task.difficulty == difficulty).all()
     if not tasks:
         raise HTTPException(status_code=404, detail="Заданий не найдено")
     return random.choice(tasks)

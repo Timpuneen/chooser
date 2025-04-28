@@ -100,3 +100,5 @@
     <img src="/readme images/rev.png" target="_blank" alt="review" width="512"/>
   </a>
 </div>
+
+### Моя почта - timpuh_work@mail.ru

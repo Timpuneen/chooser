@@ -96,5 +96,7 @@
 
 ## Далее можете ознакомиться с [demo review](https://www.youtube.com/shorts/CU8v7ZN5CbQ) проекта
 <div align="center">
-  <img src="/chooser-frontend/public/preview.png" href="https://www.youtube.com/shorts/CU8v7ZN5CbQ" alt="review" width="512"/>
+  <a href="https://www.youtube.com/shorts/CU8v7ZN5CbQ">
+    <img src="/readme images/rev.png" target="_blank" alt="review" width="512"/>
+  </a>
 </div>

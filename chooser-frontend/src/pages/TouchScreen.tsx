@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import OrientationWarningModal from "./OrientationWarningModal";
+
 
 type TouchData = {
   id: number;
@@ -327,15 +329,7 @@ export default function TouchScreen() {
 
   return (
     <div className="fixed inset-0 overflow-hidden select-none">
-      {showOrientationWarning && (
-        <div className="fixed inset-0 bg-black bg-opacity-100 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md text-center text-black">
-            <h2 className="text-2xl font-bold mb-4">Пожалуйста, поверните телефон</h2>
-            <p className="text-lg mb-4">Для игры требуется портретная ориентация экрана</p>
-            <div className="text-5xl">↻ 📱 ↻</div>
-          </div>
-        </div>
-      )}
+      {showOrientationWarning && <OrientationWarningModal />}
 
       {!isMobile && (
         <div className="fixed bottom-4 left-0 right-0 text-center text-gray-400 text-sm z-10">
